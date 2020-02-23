@@ -185,7 +185,6 @@ cd vnstat
 sed -i "s/\$iface_list = array('venet0');/\$iface_list = array('venet0');/g" config.php
 sed -i "s/\$language = 'nl';/\$language = 'en';/g" config.php
 sed -i 's/Internal/Internet/g' config.php
-sed -i '/SixXS IPv6/d' config.php
 cd
 
 # install fail2ban
