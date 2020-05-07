@@ -330,7 +330,7 @@ cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn/ca.crt
 
 # Setting Server
 cat > /etc/openvpn/server.conf <<-END
-port 445
+port 1147
 proto tcp
 dev tun
 ca ca.crt
@@ -342,9 +342,6 @@ username-as-common-name
 plugin /usr/lib/openvpn/openvpn-plugin-auth-pam.so login
 server 192.168.100.0 255.255.255.0
 ifconfig-pool-persist ipp.txt
-push "redirect-gateway def1 bypass-dhcp"
-push "dhcp-option DNS 1.1.1.1"
-push "dhcp-option DNS 1.0.0.1"
 push "route-method exe"
 push "route-delay 2"
 push "route-method exe"
@@ -356,9 +353,9 @@ group nogroup
 persist-key
 persist-tun
 status openvpn-status.log
-log         openvpn.log
+log openvpn.log
 verb 3
-cipher AES-128-CBC
+cipher AES-256-CBC
 END
 
 #Create OpenVPN Config
@@ -388,7 +385,7 @@ script-security 2
 route 0.0.0.0 0.0.0.0
 route-method exe
 route-delay 2
-cipher AES-128-CBC
+cipher AES-256-CBC
 http-proxy $MYIP 8080
 http-proxy-retry
 
@@ -409,7 +406,7 @@ service openvpn status
 #Setting USW
 apt-get install ufw
 ufw allow ssh
-ufw allow 445/tcp
+ufw allow 1147/tcp
 sed -i 's|DEFAULT_INPUT_POLICY="DROP"|DEFAULT_INPUT_POLICY="ACCEPT"|' /etc/default/ufw
 sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|' /etc/default/ufw
 cat > /etc/ufw/before.rules <<-END
@@ -488,8 +485,8 @@ COMMIT
 -A INPUT -p tcp --dport 109  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 110  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 443  -m state --state NEW -j ACCEPT
--A INPUT -p tcp --dport 445  -m state --state NEW -j ACCEPT
--A INPUT -p udp --dport 445  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 1147  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport 1147  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 1732  -m state --state NEW -j ACCEPT
 -A INPUT -p udp --dport 1732  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 3128  -m state --state NEW -j ACCEPT
