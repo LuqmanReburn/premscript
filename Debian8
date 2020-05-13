@@ -24,10 +24,10 @@ echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6
 sed -i '$ i\echo 1 > /proc/sys/net/ipv6/conf/all/disable_ipv6' /etc/rc.local
 
 #Add DNS Server ipv4
-echo "nameserver 1.1.1.1" > /etc/resolv.conf
-echo "nameserver 1.0.0.1" >> /etc/resolv.conf
-sed -i '$ i\echo "nameserver 1.1.1.1" > /etc/resolv.conf' /etc/rc.local
-sed -i '$ i\echo "nameserver 1.0.0.1" >> /etc/resolv.conf' /etc/rc.local
+echo "nameserver 8.8.8.8" > /etc/resolv.conf
+echo "nameserver 8.8.4.4" >> /etc/resolv.conf
+sed -i '$ i\echo "nameserver 8.8.8.8" > /etc/resolv.conf' /etc/rc.local
+sed -i '$ i\echo "nameserver 8.8.4.4" >> /etc/resolv.conf' /etc/rc.local
 
 # install wget and curl
 apt-get update;apt-get -y install wget curl;
@@ -72,10 +72,6 @@ sysv-rc-conf exim4 off
 
 # update apt-file
 apt-file update
-
-# setting vnstat
-vnstat -u -i venet0
-service vnstat restart
 
 # install screenfetch
 cd
@@ -162,8 +158,6 @@ service php5-fpm restart
 service nginx restart
 
 # setting port ssh
-sed -i '/Port 22/a Port 143' /etc/ssh/sshd_config
-sed -i '/Port 22/a Port  90' /etc/ssh/sshd_config
 sed -i 's/Port 22/Port  22/g' /etc/ssh/sshd_config
 service ssh restart
 
@@ -171,21 +165,8 @@ service ssh restart
 apt-get install dropbear
 sed -i 's/NO_START=1/NO_START=0/g' /etc/default/dropbear
 sed -i 's/DROPBEAR_PORT=22/DROPBEAR_PORT=442/g' /etc/default/dropbear
-sed -i 's/DROPBEAR_EXTRA_ARGS=/DROPBEAR_EXTRA_ARGS="-p 109 -p 110"/g' /etc/default/dropbear
 echo "/bin/false" >> /etc/shells
 /etc/init.d/dropbear restart
-
-# install vnstat gui
-cd /home/vps/public_html/
-wget https://raw.githubusercontent.com/daybreakersx/premscript/master/vnstat_php_frontend-1.5.1.tar.gz
-tar xf vnstat_php_frontend-1.5.1.tar.gz
-rm vnstat_php_frontend-1.5.1.tar.gz
-mv vnstat_php_frontend-1.5.1 vnstat
-cd vnstat
-sed -i "s/\$iface_list = array('venet0');/\$iface_list = array('venet0');/g" config.php
-sed -i "s/\$language = 'nl';/\$language = 'en';/g" config.php
-sed -i 's/Internal/Internet/g' config.php
-cd
 
 # install fail2ban
 apt-get -y install fail2ban
@@ -215,12 +196,8 @@ http_access deny manager
 http_access allow localhost
 http_access deny all
 http_port 8080
-http_port 8000
 http_port 3128
 http_port 3129
-http_port 8888
-http_port 8118
-http_port 8008
 coredump_dir /var/spool/squid3
 refresh_pattern ^ftp: 1440 20% 10080
 refresh_pattern ^gopher: 1440 0% 1440
@@ -234,7 +211,7 @@ service squid3 restart
 # install stunnel4
 apt-get -y install stunnel4
 wget -O /etc/stunnel/stunnel.pem "https://raw.githubusercontent.com/wangzki03/premscript/master/updates/stunnel.pem"
-wget -O /etc/stunnel/stunnel.conf "https://raw.githubusercontent.com/wangzki03/premscript/master/req/stunnel.conf"
+wget -O /etc/stunnel/stunnel.conf "https://raw.githubusercontent.com/LuqmanReburn/premscript/master/req/stunnel.conf"
 sed -i $MYIP2 /etc/stunnel/stunnel.conf
 sed -i 's/ENABLED=0/ENABLED=1/g' /etc/default/stunnel4
 service stunnel4 restart
@@ -248,32 +225,6 @@ sed -i 's/ssl=1/ssl=0/g' /etc/webmin/miniserv.conf
 rm /root/webmin_1.801_all.deb
 service webmin restart
 service vnstat restart
-
-#install PPTP
-apt-get -y install pptpd
-cat > /etc/ppp/pptpd-options <<END
-name pptpd
-refuse-pap
-refuse-chap
-refuse-mschap
-require-mschap-v2
-require-mppe-128
-ms-dns 1.1.1.1
-ms-dns 1.0.0.1
-proxyarp
-nodefaultroute
-lock
-nobsdcomp
-END
-echo "option /etc/ppp/pptpd-options" > /etc/pptpd.conf
-echo "logwtmp" >> /etc/pptpd.conf
-echo "localip 10.1.0.1" >> /etc/pptpd.conf
-echo "remoteip 10.1.0.5-100" >> /etc/pptpd.conf
-cat >> /etc/ppp/ip-up <<END
-ifconfig venet0 mtu 1400
-END
-mkdir /var/lib/premium-script
-/etc/init.d/pptpd restart
 
 # install mrtg
 wget -O /etc/snmp/snmpd.conf "https://raw.githubusercontent.com/wangzki03/premscript/master/snmpd.conf"
@@ -330,7 +281,7 @@ cp /etc/openvpn/easy-rsa/keys/ca.crt /etc/openvpn/ca.crt
 
 # Setting Server
 cat > /etc/openvpn/server.conf <<-END
-port 1147
+port 443
 proto tcp
 dev tun
 ca ca.crt
@@ -365,7 +316,7 @@ cat > /home/vps/public_html/client.ovpn <<-END
 client
 dev tun
 proto tcp
-remote $MYIP 445
+remote $MYIP 443
 persist-key
 persist-tun
 dev tun
@@ -406,7 +357,7 @@ service openvpn status
 #Setting USW
 apt-get install ufw
 ufw allow ssh
-ufw allow 1147/tcp
+ufw allow 443/tcp
 sed -i 's|DEFAULT_INPUT_POLICY="DROP"|DEFAULT_INPUT_POLICY="ACCEPT"|' /etc/default/ufw
 sed -i 's|DEFAULT_FORWARD_POLICY="DROP"|DEFAULT_FORWARD_POLICY="ACCEPT"|' /etc/default/ufw
 cat > /etc/ufw/before.rules <<-END
@@ -419,9 +370,9 @@ cat > /etc/ufw/before.rules <<-END
 COMMIT
 # END OPENVPN RULES
 END
-ufw enable
-ufw status
 ufw disable
+ufw status
+ufw enable
 
 # set ipv4 forward
 echo 1 > /proc/sys/net/ipv4/ip_forward
@@ -482,11 +433,10 @@ COMMIT
 -A INPUT -p udp --dport 80  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 142  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 143  -m state --state NEW -j ACCEPT
--A INPUT -p tcp --dport 109  -m state --state NEW -j ACCEPT
--A INPUT -p tcp --dport 110  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 442  -m state --state NEW -j ACCEPT
+-A INPUT -p tcp --dport 444  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 443  -m state --state NEW -j ACCEPT
--A INPUT -p tcp --dport 1147  -m state --state NEW -j ACCEPT
--A INPUT -p udp --dport 1147  -m state --state NEW -j ACCEPT
+-A INPUT -p udp --dport 443  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 1732  -m state --state NEW -j ACCEPT
 -A INPUT -p udp --dport 1732  -m state --state NEW -j ACCEPT
 -A INPUT -p tcp --dport 3128  -m state --state NEW -j ACCEPT
@@ -562,15 +512,13 @@ echo "   - Auto-Reboot : [OFF]"  | tee -a log-install.txt
 echo "   - IPv6        : [OFF]"  | tee -a log-install.txt
 echo ""  | tee -a log-install.txt
 echo "Application & Port Information"  | tee -a log-install.txt
-echo "   - OpenVPN     : TCP 445"  | tee -a log-install.txt
-echo "   - OpenSSH     : 22, 143"  | tee -a log-install.txt
-echo "   - Stunnel4    : 443"  | tee -a log-install.txt
-echo "   - Dropbear    : 109, 110, 442"  | tee -a log-install.txt
-echo "   - Squid Proxy : 8008, 8118, 8000, 8080, 8888, 3128, 3129 (limit to IP Server)"  | tee -a log-install.txt
+echo "   - OpenVPN     : TCP 443"  | tee -a log-install.txt
+echo "   - OpenSSH     : 22"  | tee -a log-install.txt
+echo "   - Stunnel4    : 444"  | tee -a log-install.txt
+echo "   - Dropbear    : 442"  | tee -a log-install.txt
+echo "   - Squid Proxy : 8080, 3128, 3129 (limit to IP Server)"  | tee -a log-install.txt
 echo "   - Badvpn      : 7300"  | tee -a log-install.txt
 echo "   - Nginx       : 85"  | tee -a log-install.txt
-echo "   - PPTP VPN    : 1732"  | tee -a log-install.txt
-echo ""  | tee -a log-install.txt
 echo "Server Tools"  | tee -a log-install.txt
 echo "   - htop"  | tee -a log-install.txt
 echo "   - iftop"  | tee -a log-install.txt
@@ -588,7 +536,6 @@ echo "Important Information"  | tee -a log-install.txt
 echo "   - Download Config OpenVPN : http://$MYIP:85/client.ovpn"  | tee -a log-install.txt
 echo "     Mirror (*.tar.gz)       : http://$MYIP:85/openvpn.tar.gz"  | tee -a log-install.txt
 echo "   - Webmin                  : http://$MYIP:10000/"  | tee -a log-install.txt
-echo "   - Vnstat                  : http://$MYIP:85/vnstat/"  | tee -a log-install.txt
 echo "   - MRTG                    : http://$MYIP:85/mrtg/"  | tee -a log-install.txt
 echo "   - Installation Log        : cat /root/log-install.txt"  | tee -a log-install.txt
 echo ""  | tee -a log-install.txt
